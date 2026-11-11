@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# PyInstaller
+build/
+dist/
+
+# Test output and measurement data (do not commit raw EBSD maps)
+*.ctf
+*_Auswertung/
+*_analysis/
+selbsttest.log

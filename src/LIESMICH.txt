@@ -1,0 +1,116 @@
+EBSD-Auswertung 1.3 – Windows-Programm
+=======================================
+(English: see README_EN.txt)
+
+EBSD-Auswertung von Oxford/AZtec-ctf-Dateien mit MTEX für Python:
+IPF-Karten, Polfiguren und inverse Polfiguren, KAM, Korngrenz-Misorientierung,
+Phasenverteilung, Rekristallisationsanalyse (GOS), Korngröße, Subkorngröße und
+Kornaspektverhältnis, Kratzerentfernung (automatisch und manuell); gespeicherte Datensätze und Vergleich
+mehrerer Datensätze. Oberfläche und Ausgaben auf Deutsch oder Englisch.
+
+
+START
+-----
+1. ZIP-Datei vollständig entpacken (z. B. nach C:\Programme\EBSD-Auswertung oder in den
+   eigenen Dokumente-Ordner). Das Programm NICHT direkt aus der ZIP-Datei starten.
+2. EBSD-Auswertung.exe doppelklicken. Der Ordner "_internal" muss neben der .exe bleiben.
+3. Optional: Rechtsklick auf EBSD-Auswertung.exe -> "Senden an" -> "Desktop (Verknüpfung erstellen)".
+
+Beim ersten Start kann Windows SmartScreen warnen ("Der Computer wurde durch Windows geschützt"),
+weil das Programm nicht digital signiert ist: "Weitere Informationen" -> "Trotzdem ausführen".
+Eine Installation oder Administratorrechte sind nicht nötig.
+
+Voraussetzung: Windows 10 oder 11, 64 bit. Für die Gesamtkarte einer typischen Messung
+(ca. 2 Mio. Punkte) werden etwa 4 GB freier Arbeitsspeicher benötigt.
+
+
+BEDIENUNG (Kurzfassung – ausführlich im Programm unter Hilfe -> Kurzanleitung)
+---------
+1. Datei -> ctf-Datei öffnen.
+2. Phasenrollen prüfen: genau eine Matrix, Partikelphasen bleiben erhalten,
+   Fehlindizierungen werden verworfen und aus den Nachbarn ergänzt.
+3. Funktionen an-/abwählen (Kratzerentfernung, Mg2Si-Erkennung, einzelne Auswertungen, Subkornerkennung).
+4. Optional Ausschnitt wählen: in der Übersicht ein Rechteck mit der Maus aufziehen.
+   Optional Kratzer manuell markieren oder Markierungen aufheben (Übersicht, siehe unten).
+5. "Auswertung starten". Danach Vorschau unter "Ergebnisse".
+6. Abbildungen ankreuzen, Formate (PNG, PDF, SVG, TIFF) und Auflösung wählen, exportieren.
+   Kennwerte_und_Parameter.txt wird immer mitgeschrieben, bei der Korngrößenauswertung
+   zusätzlich Kornliste_Koerner.csv und Kornliste_Subkoerner.csv (Excel: Semikolon, Dezimalkomma).
+
+Die Parameter (Reiter "Parameter") werden beim Beenden gespeichert und lassen sich über
+Datei -> Einstellungen speichern/laden als JSON-Datei weitergeben.
+
+
+NEU IN 1.3
+----------
+- Sprache Deutsch / Englisch: Menü "Sprache / Language" (wird nach einem Neustart übernommen).
+  Oberfläche, Hilfe, Abbildungen, Kennwerte, Kornlisten und Vergleich erscheinen in der gewählten Sprache.
+  Englische Ausgaben: Dateinamen englisch (z. B. Results_and_parameters.txt, Grain_list_grains.csv),
+  CSV mit Komma als Trennzeichen und Dezimalpunkt. Deutsche Ausgaben unverändert (Semikolon, Dezimalkomma).
+  Für die Kommandozeile: --lang de bzw. --lang en.
+- Kratzer manuell markieren / Markierung aufheben (Reiter "Übersicht / Ausschnitt / Kratzer"):
+    Werkzeug "Kratzer markieren": Linie entlang des Kratzers ziehen (Breite in µm einstellbar).
+    Werkzeug "Markierung aufheben": Linie über eine falsche Markierung ziehen – dort gilt nichts mehr als Kratzer.
+    "Automatische Erkennung anzeigen" blendet die automatische Erkennung rot ein (auch nach jeder Auswertung).
+    Farben: rot = automatisch, magenta = manuell markiert, hellblau = aufgehoben.
+    Rückgängig (Strg+Z), Alle löschen; Lupe/Verschieben zum Zoomen in die Karte.
+  Die Markierungen werden je ctf-Datei gespeichert (%LOCALAPPDATA%\EBSD-Auswertung\kratzer_markierungen.json),
+  beim erneuten Öffnen wiederhergestellt, im Datensatz abgelegt und bei "Neu berechnen" verwendet.
+  Sie gelten auch bei ausgeschalteter automatischer Erkennung. Abbildung 00 und Kennwerte zeigen
+  automatische und manuelle Anteile getrennt.
+- Subkornerkennung an-/abwählbar (Funktion "Subkörner erkennen"), z. B. wenn die Schrittweite für Subkörner zu
+  groß ist (Faustregel: Subkorn >= ca. 5 Schrittweiten; das Programm weist darauf hin, wenn der Median-ECD
+  der Subkörner darunter liegt). Ohne Subkörner entfallen LAGB-Linien, Abbildung 12, die Subkorn-Kornliste und
+  die Gegenprüfung auf Subkornebene; die Rekristallisation wird nur auf Kornebene klassifiziert
+  (rekristallisiert / nicht rekristallisiert). Die Misorientierungsverteilung bleibt unverändert.
+  Der Datensatzvergleich zeigt, ob ein Datensatz mit oder ohne Subkörner ausgewertet wurde.
+- Mit eingeschalteter Subkornerkennung und ohne manuelle Markierungen sind die Ergebnisse identisch zu 1.2.
+  Gespeicherte Datensätze aus 1.2 bleiben nutzbar.
+
+
+DATENSÄTZE UND VERGLEICH (neu in 1.2)
+-------------------------------------
+- Jede Auswertung wird automatisch als Datensatz gespeichert (Reiter "Datensätze / Vergleich") und ist
+  nach einem Neustart wieder da: Vorschauen, Kennwerte, Kornlisten, Rollen, Parameter und Ausschnitt.
+  Dieselbe ctf-Datei mit demselben Ausschnitt ersetzt den vorhandenen Datensatz; ein anderer Ausschnitt
+  ergibt einen eigenen Datensatz.
+- Doppelklick bzw. "Ergebnisse anzeigen" zeigt die gespeicherten Ergebnisse ohne Neuberechnung.
+  "Neu berechnen" lädt die ctf-Datei und rechnet mit den gespeicherten Einstellungen erneut.
+  Für den Export in voller Auflösung wird ein gespeicherter Datensatz auf Nachfrage neu berechnet;
+  alternativ lassen sich Vorschaubilder, Kennwerte und Kornlisten direkt kopieren.
+- Angehakte Datensätze erscheinen im Vergleich:
+    V1 Kennwerte-Vergleich: Subkorngröße (Median-ECD), HAGB-Anteil der Grenzlänge, rekristallisierter
+       Anteil gesamt und 0–1 µm von Partikeln, Anteil <110> || Stauchrichtung (±15°)
+    V2 Misorientierungsverteilung: Linienschnitt RD+CD, 2°-Klassen, alle Datensätze überlagert
+  Darunter eine Tabelle der wichtigsten Kennwerte. Bezeichnung ("Umbenennen") und Reihenfolge
+  (▲/▼) bestimmen Beschriftung und Farben. "Vergleich exportieren" schreibt V1, V2 in den unter
+  "Ergebnisse" gewählten Formaten und Vergleich_Kennwerte.csv (Semikolon, Dezimalkomma).
+- Ablage: %LOCALAPPDATA%\EBSD-Auswertung\datensaetze (Datei -> Ordner der gespeicherten Datensätze öffnen).
+
+
+HINWEISE
+--------
+- Neu in 1.3: Englisch, manuelle Kratzermarkierungen, Subkornerkennung abwählbar (siehe oben).
+- Neu in 1.2: gespeicherte Datensätze, Vergleichsabbildungen V1/V2, Vergleichstabelle (siehe oben).
+- Neu in 1.1: Korngröße (HAGB-Körner), Subkorngröße (Grenzen >= LAGB) und Aspektverhältnis,
+  Abbildungen 11-14, Abschnitt KORNGRÖSSE in den Kennwerten, Kornlisten als CSV.
+  Randkörner und (Sub-)Körner mit weniger als "min. Punkte je (Sub-)Korn" (Reiter Parameter)
+  bleiben in den Kornlisten, gehen aber nicht in die Statistik ein.
+- Der erste Lauf nach dem Programmstart ist langsamer, weil Rechenroutinen kompiliert werden.
+  Der Zwischenspeicher liegt unter %LOCALAPPDATA%\EBSD-Auswertung und darf gelöscht werden.
+- Laufzeit Gesamtkarte (1592 x 1194 Punkte) auf einem aktuellen Büro-PC: ca. 1–3 min.
+- Programmausgaben/Fehler: %LOCALAPPDATA%\EBSD-Auswertung\ausgabe.log und Reiter "Protokoll".
+- Selbsttest ohne Oberfläche (z. B. für die IT):
+    EBSD-Auswertung.exe --selftest "C:\Pfad\datei.ctf" "C:\Pfad\Ausgabeordner" [--lang en] [--nosub]
+  schreibt alle Abbildungen und selbsttest.log in den Ausgabeordner.
+
+
+LIZENZEN
+--------
+Berechnungen: MTEX für Python (GPL-2.0, https://github.com/mtex-toolbox/pymtex).
+Oberfläche: Qt / PySide6 (LGPL-3.0). Weitere Bibliotheken: NumPy, SciPy, matplotlib, numba,
+llvmlite, finufft, Pillow (jeweils BSD-/MIT-artige Lizenzen).
+Da MTEX unter der GPL steht, gilt die GPL-2.0 auch für dieses Programm; der Quellcode
+liegt im Paket "EBSD-Auswertung_Quellcode".
+
+Institut für Metallformung, TU Bergakademie Freiberg
