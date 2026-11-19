@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.4 – November 2026
+
+- **Test data per dataset** (*Test data …*): alloy, Fe/Si content, position, test temperature and strain rate,
+  **local temperature, local strain φ and local strain rate φ̇** (e.g. from the FE simulation at the measured
+  position) and flow stress k_f. Decimal comma or point; *Suggest from label* reads alloy, temperature, strain rate
+  and position from labels such as "750-3, 350 °C / 10 s⁻¹, centre".
+- **Input field Q** (kJ/mol, default 142) for the Zener–Hollomon parameter Z = φ̇·exp(Q/RT); all datasets are
+  evaluated with the same Q. Option *ln Z from*: local values (else test condition) or always the test condition.
+  ln Z appears in the comparison table and CSV.
+- **New comparison figures V3–V13:** key figures vs ln Z (overview or one selectable key figure, exponential fit per
+  alloy), recrystallized fraction vs particle distance, decomposition of the difference in recrystallized fraction
+  (particle proximity vs tendency to recrystallize) with what-if bars, maps side by side (optionally same µm scale),
+  GOS classes, subgrain size distribution, subgrain size vs flow stress (Holt relation d·k_f/(G·b)), geometric DRX,
+  KAM distribution and KAM per class, comparability check with warnings, sensitivity to the GOS threshold.
+  V2 now shows the Mackenzie distribution and the cumulative curve.
+- **Resampling to a common step size:** parameter *Resample step size to* (0 = off, nearest neighbour) and button
+  *Match step size …*, which re-analyses all ticked datasets with a finer step on the coarsest grid; originals are kept.
+- Additional key figures: KAM median, 90 % quantile and distribution, recrystallized fraction per particle distance
+  with area fractions, GOS sensitivity, share of the three largest grains, grain counts, particle fraction, d10/d90.
+- Datasets stored with 1.2/1.3 remain usable; additional key figures are read from the stored key figures text where
+  possible. KAM distribution and GOS sensitivity need *Recalculate*.
+- New module `ebsd_compare.py` (comparison figures V3–V13, test data, Z, Mackenzie distribution).
+- The PDF documentation still describes version 1.3; the Markdown user guide covers 1.4.
+
 ## 1.3 – November 2026
 
 - **English language:** user interface, help, figures, key figures, grain lists and the dataset comparison are

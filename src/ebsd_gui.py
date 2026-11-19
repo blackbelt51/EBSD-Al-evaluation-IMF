@@ -9,6 +9,7 @@ Sprache:    Menü „Sprache / Language“ (wird nach einem Neustart übernommen
 from __future__ import annotations
 
 import json
+import re
 import os
 import sys
 import time
@@ -97,13 +98,37 @@ aufziehen oder die Koordinaten eintragen.</li>
 <li>Jede Auswertung wird automatisch als <b>Datensatz</b> gespeichert (Reiter <i>Datensätze / Vergleich</i>) und
 steht nach einem Neustart wieder zur Verfügung: Vorschauen, Kennwerte und Kornlisten ohne Neuberechnung. Dieselbe Datei
 mit demselben Ausschnitt ersetzt den vorhandenen Datensatz.</li>
-<li><b>Vergleich:</b> angehakte Datensätze erscheinen im Kennwerte-Vergleich (Subkorngröße, HAGB-Anteil,
-rekristallisierter Anteil gesamt und nahe Partikeln, ⟨110⟩ ∥ CD) und in der überlagerten Misorientierungsverteilung;
-Bezeichnung und Reihenfolge sind frei wählbar, Export als Abbildung und CSV.</li>
+<li><b>Vergleich:</b> angehakte Datensätze erscheinen in der Kennwerte-Tabelle und in den Vergleichsabbildungen V1–V13
+(siehe unten); Bezeichnung und Reihenfolge sind frei wählbar, Export als Abbildung und CSV.</li>
 <li>Abbildungen ankreuzen, Formate (PNG, PDF, SVG, TIFF) und Auflösung wählen und <b>exportieren</b>.
 Die Datei <i>Kennwerte_und_Parameter.txt</i> wird immer mitgeschrieben, mit der Korngrößenauswertung zusätzlich
 <i>Kornliste_Koerner.csv</i> und <i>Kornliste_Subkoerner.csv</i> (Semikolon, Dezimalkomma, für Excel).</li>
 </ol>
+<h3>Vergleich verschiedener Zustände (neu in 1.4)</h3>
+<ul>
+<li><b>Versuchsdaten …</b> (Reiter <i>Datensätze / Vergleich</i>): je Datensatz Legierung, Fe-/Si-Gehalt, Position,
+Prüftemperatur und Prüf-Umformgeschwindigkeit sowie <b>lokale Temperatur, lokaler Umformgrad φ und lokale
+Umformgeschwindigkeit φ̇</b> (z. B. aus der FE-Simulation an der Messstelle) und die Fließspannung k_f eintragen.
+„Vorschlag aus Bezeichnung“ liest Legierung, Temperatur, Umformgeschwindigkeit und Position aus Bezeichnungen wie
+„750-3, 350 °C / 10 s⁻¹, Mitte“. Position „M“/„Mitte“ = gefüllte Symbole, andere Positionen offene Symbole.</li>
+<li><b>Q</b> (kJ/mol): gemeinsame scheinbare Aktivierungsenergie für Z = φ̇ · exp(Q/RT); voreingestellt 142 kJ/mol.
+Alle Datensätze werden mit demselben Q bewertet, damit ln Z eine gemeinsame Skala bleibt.
+<b>ln Z aus</b>: lokale Werte (falls eingetragen, sonst Prüfbedingung) oder immer die Prüfbedingung.</li>
+<li>Neue Vergleichsabbildungen: V3 Kennwerte über ln Z (Übersicht oder ein Kennwert, exponentielle Anpassung je
+Legierung ab drei Punkten in Probenmitte), V4 rekristallisierter Anteil über dem Partikelabstand, V5 Zerlegung des
+Unterschieds im rekristallisierten Anteil (Partikelnähe gegenüber Rekristallisationsneigung, Bezug = erster
+Datensatz), V6 Karten nebeneinander (gleicher µm-Maßstab wählbar), V7 GOS-Klassen, V8 Subkorngrößenverteilung,
+V9 Subkorngröße und Fließspannung (Holt-Beziehung d·k_f/(G·b)), V10 geometrische DRX (HAGB-Sehnenlänge und
+Subkorngröße über ln Z), V11 KAM, V12 Vergleichbarkeit (Warnungen bei unterschiedlicher Schrittweite, kleiner Fläche,
+vielen Nulllösungen, wenigen Körnern, nicht aufgelösten Subkörnern), V13 Empfindlichkeit gegenüber der GOS-Grenze.
+V2 enthält jetzt die Mackenzie-Verteilung und die Summenkurve.</li>
+<li><b>Schrittweite angleichen …</b>: rechnet alle angehakten Datensätze mit feinerer Schrittweite auf ein gemeinsames
+Raster um (nächster Nachbar, Vorgabe = gröbste Schrittweite) und wertet sie neu aus. Die Originale bleiben gespeichert.
+Der Parameter <i>Schrittweite angleichen auf</i> (Reiter Parameter) wirkt auch bei einer einzelnen Auswertung; 0 = aus.
+KAM, Subkorngröße und HAGB-Anteil hängen von der Schrittweite ab.</li>
+<li>Datensätze aus älteren Versionen funktionieren weiter; zusätzliche Kennwerte werden aus den gespeicherten Kennwerten
+gelesen. Die KAM-Verteilung (V11) und die GOS-Empfindlichkeit (V13) erfordern „Neu berechnen“.</li>
+</ul>
 <h3>Kratzer manuell markieren oder Markierung aufheben (neu in 1.3)</h3>
 <ul>
 <li>In der <i>Übersicht</i> das Werkzeug <b>Kratzer markieren</b> wählen und mit gedrückter linker Maustaste eine Linie
@@ -176,13 +201,36 @@ runs if IPF maps, recrystallization or grain size are selected.</li>
 <li>Each analysis is stored automatically as a <b>dataset</b> (tab <i>Datasets / Comparison</i>) and is available
 again after a restart: previews, key figures and grain lists without recalculation. The same file with the same area
 replaces the existing dataset.</li>
-<li><b>Comparison:</b> ticked datasets appear in the key-figure comparison (subgrain size, HAGB fraction,
-recrystallized fraction in total and near particles, ⟨110⟩ ∥ CD) and in the overlaid misorientation distribution;
-label and order can be chosen freely, export as figure and CSV.</li>
+<li><b>Comparison:</b> ticked datasets appear in the key-figure table and in the comparison figures V1–V13
+(see below); label and order can be chosen freely, export as figure and CSV.</li>
 <li>Tick figures, choose formats (PNG, PDF, SVG, TIFF) and resolution and <b>export</b>.
 <i>Results_and_parameters.txt</i> is always written, with the grain size analysis also <i>Grain_list_grains.csv</i>
 and <i>Grain_list_subgrains.csv</i> (comma-separated, decimal point).</li>
 </ol>
+<h3>Comparing different states (new in 1.4)</h3>
+<ul>
+<li><b>Test data …</b> (tab <i>Datasets / Comparison</i>): enter per dataset the alloy, Fe/Si content, position, test
+temperature and test strain rate as well as the <b>local temperature, local strain φ and local strain rate φ̇</b>
+(e.g. from the FE simulation at the measured position) and the flow stress k_f. “Suggest from label” reads alloy,
+temperature, strain rate and position from labels such as “750-3, 350 °C / 10 s⁻¹, centre”. Position “M”/“centre” =
+filled symbols, other positions open symbols.</li>
+<li><b>Q</b> (kJ/mol): common apparent activation energy for Z = φ̇ · exp(Q/RT); default 142 kJ/mol. All datasets
+are evaluated with the same Q so that ln Z stays on one scale. <b>ln Z from</b>: local values (if entered, otherwise the
+test condition) or always the test condition.</li>
+<li>New comparison figures: V3 key figures vs ln Z (overview or one key figure, exponential fit per alloy from three
+centre points), V4 recrystallized fraction vs particle distance, V5 decomposition of the difference in recrystallized
+fraction (particle proximity vs tendency to recrystallize, reference = first dataset), V6 maps side by side (same µm
+scale optional), V7 GOS classes, V8 subgrain size distribution, V9 subgrain size and flow stress (Holt relation
+d·k_f/(G·b)), V10 geometric DRX (HAGB intercept and subgrain size vs ln Z), V11 KAM, V12 comparability (warnings for
+different step sizes, small area, many zero solutions, few grains, unresolved subgrains), V13 sensitivity to the GOS
+threshold. V2 now includes the Mackenzie distribution and the cumulative curve.</li>
+<li><b>Match step size …</b>: resamples all ticked datasets with a finer step to a common grid (nearest neighbour,
+default = coarsest step size) and analyses them again. The originals are kept. The parameter <i>Resample step size to</i>
+(tab Parameters) also works for a single analysis; 0 = off. KAM, subgrain size and HAGB fraction depend on the step
+size.</li>
+<li>Datasets from older versions still work; additional key figures are read from the stored key figures. The KAM
+distribution (V11) and the GOS sensitivity (V13) require “Recalculate”.</li>
+</ul>
 <h3>Mark scratches manually or remove a marking (new in 1.3)</h3>
 <ul>
 <li>In the <i>Overview</i>, choose the tool <b>Mark scratch</b> and draw a line along the scratch with the left mouse
@@ -512,6 +560,9 @@ class MainWindow(QMainWindow):
         self._pending = None            # Neuberechnung eines gespeicherten Datensatzes
         self._ds_mute = False
         self._restart = False
+        self._queue = []                # Neuberechnungen „Schrittweite angleichen“: [(Datensatz-ID, Schrittweite)]
+        self._queue_restore = None      # Einstellungen vor der Warteschlange (werden danach wiederhergestellt)
+        self._load_compare_options()
         self._build_ui()
         self._restore()
         self.refresh_datasets()
@@ -1123,7 +1174,19 @@ class MainWindow(QMainWindow):
                 (L("▲ nach oben", "▲ up"), lambda: self._ds_move(-1), 2, 0, L("Reihenfolge im Vergleich", "Order in the comparison")),
                 (L("▼ nach unten", "▼ down"), lambda: self._ds_move(1), 2, 1, L("Reihenfolge im Vergleich", "Order in the comparison")),
                 (L("alle", "all"), lambda: self._ds_check_all(True), 3, 0, L("alle Datensätze in den Vergleich", "all datasets in the comparison")),
-                (L("keine", "none"), lambda: self._ds_check_all(False), 3, 1, L("keinen Datensatz im Vergleich", "no dataset in the comparison"))]
+                (L("keine", "none"), lambda: self._ds_check_all(False), 3, 1, L("keinen Datensatz im Vergleich", "no dataset in the comparison")),
+                (L("Versuchsdaten …", "Test data …"), self._ds_test_dialog, 4, 0,
+                 L("Legierung, Position, Prüfbedingung, lokale Temperatur, lokaler Umformgrad und lokale Umformgeschwindigkeit "
+                   "(z. B. aus der FE-Simulation) sowie Fließspannung des gewählten Datensatzes eintragen – "
+                   "Grundlage für ln Z, V3, V7, V9 und V10",
+                   "Enter alloy, position, test condition, local temperature, local strain and local strain rate "
+                   "(e.g. from the FE simulation) and flow stress of the selected dataset – "
+                   "basis for ln Z, V3, V7, V9 and V10")),
+                (L("Schrittweite angleichen …", "Match step size …"), self._ds_match_step, 4, 1,
+                 L("alle angehakten Datensätze mit feinerer Schrittweite auf die gröbste Schrittweite umrechnen "
+                   "(nächster Nachbar) und neu auswerten; die Originale bleiben erhalten",
+                   "resample all ticked datasets with a finer step size to the coarsest step size "
+                   "(nearest neighbour) and analyse them again; the originals are kept"))]
         self.ds_buttons = []
         for text, fn, r, c, tip in btns:
             b = QPushButton(text)
@@ -1151,6 +1214,7 @@ class MainWindow(QMainWindow):
             b.clicked.connect(fn)
             tb.addWidget(b)
         rv.addLayout(tb)
+        rv.addLayout(self._build_compare_options())
         vs = QSplitter(Qt.Vertical)
         self.cmp_preview = Preview()
         self.cmp_preview.label.setText(self._no_ds_text())
@@ -1164,10 +1228,12 @@ class MainWindow(QMainWindow):
         rv.addWidget(vs, 1)
         hb = QHBoxLayout()
         b = QPushButton(L("Vergleich exportieren …", "Export comparison …"))
-        b.setToolTip(L("V1, V2 in den unter „Ergebnisse“ gewählten Formaten und der dort gewählten Auflösung, "
-                       f"dazu {dsets.compare_csv_name()} (Semikolon, Dezimalkomma)",
-                       "V1, V2 in the formats and resolution selected under “Results”, "
-                       f"plus {dsets.compare_csv_name()} (comma-separated, decimal point)"))
+        b.setToolTip(L("V1–V13 in den unter „Ergebnisse“ gewählten Formaten und der dort gewählten Auflösung, "
+                       f"dazu {dsets.compare_csv_name()} (Semikolon, Dezimalkomma); Q, Bezugsgröße für ln Z, "
+                       "V3-Kennwert und Maßstab wie oben eingestellt",
+                       "V1–V13 in the formats and resolution selected under “Results”, "
+                       f"plus {dsets.compare_csv_name()} (comma-separated, decimal point); Q, basis of ln Z, "
+                       "V3 key figure and scale as set above"))
         b.clicked.connect(self.export_compare)
         self.btn_cmp_export = b
         hb.addWidget(b, 2)
@@ -1225,13 +1291,17 @@ class MainWindow(QMainWindow):
         if self._ds_mute:
             return
         self.store.set_compare(it.data(Qt.UserRole), it.checkState() == Qt.Checked)
+        self._ds_current_changed(self.ds_list.currentItem())
         self.refresh_compare()
 
     def _ds_current_changed(self, cur, _prev=None):
         ds = self.store.get(cur.data(Qt.UserRole)) if cur else None
         self.lbl_ds_info.setText(ds.info() if ds else "")
+        busy = self.task is not None and self.task.isRunning()
         for b in self.ds_buttons[:6]:
             b.setEnabled(ds is not None)
+        self.ds_buttons[8].setEnabled(ds is not None)
+        self.ds_buttons[9].setEnabled(not busy and len(self.compare_datasets()) >= 2)
 
     def _ds_check_all(self, on):
         self._ds_mute = True
@@ -1240,6 +1310,7 @@ class MainWindow(QMainWindow):
             it.setCheckState(Qt.Checked if on else Qt.Unchecked)
             self.store.set_compare(it.data(Qt.UserRole), on)
         self._ds_mute = False
+        self._ds_current_changed(self.ds_list.currentItem())
         self.refresh_compare()
 
     def _ds_move(self, d):
@@ -1336,7 +1407,7 @@ class MainWindow(QMainWindow):
             self.lst.setCurrentRow(0)
             self._show_preview(self.lst.currentItem())
 
-    def recompute(self, ds, export=None):
+    def recompute(self, ds, export=None, resample=None):
         path = ds.path
         if not path.exists():
             QMessageBox.warning(self, app_title(), L(f"Die ctf-Datei wurde nicht gefunden:\n{path}\n\n"
@@ -1347,7 +1418,11 @@ class MainWindow(QMainWindow):
         k = ds.metrics
         self._pending = {"settings": Settings.from_dict(k.get("einstellungen", {})), "roles": k.get("rollen", {}),
                          "crop": k.get("ausschnitt_um"), "export": export, "label": ds.label,
-                         "strokes": ebsd_marks.clean_strokes(k.get("kratzer_manuell"))}
+                         "strokes": ebsd_marks.clean_strokes(k.get("kratzer_manuell")),
+                         "test": ds.test, "source": ds.id}
+        if resample is not None:
+            self._pending["settings"].resample_um = float(resample)
+            self._pending["label"] = re.sub(r"\s*\([\d.,]+ µm (Schritt|step)\)$", "", ds.label)
         self.log(L(f"Neuberechnung des gespeicherten Datensatzes „{ds.label}“", f"Recalculating the stored dataset “{ds.label}”"))
         self.open_file(str(path))
 
@@ -1367,8 +1442,12 @@ class MainWindow(QMainWindow):
 
     def _store_result(self, res, previews):
         try:
-            label = self._pending.get("label") if self._pending else None
-            ds = self.store.save_result(res, previews, label=label)
+            p = self._pending or {}
+            ds = self.store.save_result(res, previews, label=p.get("label"))
+            if p.get("test") and not ds.test:            # Versuchsdaten vom Ausgangsdatensatz übernehmen
+                self.store.set_test(ds.id, p["test"])
+            if p.get("source") and p["source"] != ds.id and p["settings"].resample_um:
+                self.store.set_compare(p["source"], False)  # Original aus dem Vergleich nehmen, angeglichene Fassung zeigen
             self.live_ds = ds.id
             self.stored_view = None
             self.refresh_datasets(select=ds.id)
@@ -1376,6 +1455,263 @@ class MainWindow(QMainWindow):
         except Exception as e:  # noqa: BLE001
             self.log(L("Datensatz konnte nicht gespeichert werden: ", "Dataset could not be stored: ")
                      + f"{type(e).__name__}: {e}\n{traceback.format_exc()}")
+
+    # ---------------------------------------------------------------- Vergleich: Optionen, Versuchsdaten, Schrittweite (ab 1.4)
+    def _load_compare_options(self):
+        o = dsets._cmp.OPTIONS
+        try:
+            o["Q_kJ"] = float(self.qs.value("cmp_Q_kJ", o["Q_kJ"]))
+        except (TypeError, ValueError):
+            pass
+        zb = str(self.qs.value("cmp_z_basis", o["z_basis"]))
+        o["z_basis"] = zb if zb in ("lokal", "nominell") else "lokal"
+        o["v3_key"] = str(self.qs.value("cmp_v3_key", o["v3_key"]))
+        o["same_scale"] = str(self.qs.value("cmp_same_scale", o["same_scale"])).lower() in ("true", "1")
+
+    def _build_compare_options(self):
+        o = dsets._cmp.OPTIONS
+        hb = QHBoxLayout()
+        lab = QLabel("Q:")
+        tip_q = L("gemeinsame scheinbare Aktivierungsenergie für den Zener-Hollomon-Parameter "
+                  "Z = φ̇ · exp(Q/RT) (alle Datensätze mit demselben Q, damit ln Z vergleichbar bleibt)",
+                  "common apparent activation energy for the Zener–Hollomon parameter "
+                  "Z = φ̇ · exp(Q/RT) (the same Q for all datasets so that ln Z stays comparable)")
+        lab.setToolTip(tip_q)
+        hb.addWidget(lab)
+        self.sp_Q = QDoubleSpinBox()
+        self.sp_Q.setRange(20.0, 600.0)
+        self.sp_Q.setDecimals(1)
+        self.sp_Q.setSingleStep(1.0)
+        self.sp_Q.setSuffix(" kJ/mol")
+        self.sp_Q.setValue(float(o["Q_kJ"]))
+        self.sp_Q.setToolTip(tip_q)
+        self.sp_Q.setKeyboardTracking(False)
+        self.sp_Q.valueChanged.connect(self._cmp_option_changed)
+        hb.addWidget(self.sp_Q)
+        hb.addSpacing(10)
+        hb.addWidget(QLabel(L("ln Z aus:", "ln Z from:")))
+        self.cb_zbasis = QComboBox()
+        self.cb_zbasis.addItem(L("lokalen Werten (sonst Prüfbedingung)", "local values (else test condition)"), "lokal")
+        self.cb_zbasis.addItem(L("Prüfbedingung", "test condition"), "nominell")
+        self.cb_zbasis.setToolTip(L("„lokal“: lokale Temperatur und lokale Umformgeschwindigkeit aus den Versuchsdaten, "
+                                    "falls eingetragen, sonst Prüftemperatur und Prüf-Umformgeschwindigkeit",
+                                    "“local”: local temperature and local strain rate from the test data if entered, "
+                                    "otherwise test temperature and test strain rate"))
+        self.cb_zbasis.setCurrentIndex(max(0, self.cb_zbasis.findData(o["z_basis"])))
+        self.cb_zbasis.currentIndexChanged.connect(self._cmp_option_changed)
+        hb.addWidget(self.cb_zbasis)
+        hb.addSpacing(10)
+        hb.addWidget(QLabel(L("Kennwert (V3):", "Key figure (V3):")))
+        self.cb_v3 = QComboBox()
+        for key, title in dsets._cmp.v3_choices():
+            self.cb_v3.addItem(title, key)
+        self.cb_v3.setCurrentIndex(max(0, self.cb_v3.findData(o["v3_key"])))
+        self.cb_v3.currentIndexChanged.connect(self._cmp_option_changed)
+        hb.addWidget(self.cb_v3, 1)
+        self.chk_same_scale = QCheckBox(L("gleicher Maßstab (V6)", "same scale (V6)"))
+        self.chk_same_scale.setToolTip(L("Karten in V6 im gleichen µm-Maßstab (kleine Messfelder erscheinen kleiner); "
+                                         "ohne Haken füllt jede Karte ihr Feld",
+                                         "maps in V6 at the same µm scale (small maps appear smaller); "
+                                         "unticked, each map fills its panel"))
+        self.chk_same_scale.setChecked(bool(o["same_scale"]))
+        self.chk_same_scale.toggled.connect(self._cmp_option_changed)
+        hb.addWidget(self.chk_same_scale)
+        return hb
+
+    def _cmp_option_changed(self, *_):
+        o = dsets._cmp.OPTIONS
+        o["Q_kJ"] = float(self.sp_Q.value())
+        o["z_basis"] = self.cb_zbasis.currentData()
+        o["v3_key"] = self.cb_v3.currentData()
+        o["same_scale"] = self.chk_same_scale.isChecked()
+        self.qs.setValue("cmp_Q_kJ", o["Q_kJ"])
+        self.qs.setValue("cmp_z_basis", o["z_basis"])
+        self.qs.setValue("cmp_v3_key", o["v3_key"])
+        self.qs.setValue("cmp_same_scale", o["same_scale"])
+        self.refresh_compare()
+
+    @staticmethod
+    def _num_text(v):
+        t = f"{float(v):.6g}"
+        return t.replace(".", ",") if get_language() == "de" else t
+
+    @staticmethod
+    def _parse_num(text):
+        t = text.strip().replace(" ", "").replace(",", ".")
+        if not t:
+            return None
+        return float(t)
+
+    def _ds_test_dialog(self):
+        ds = self._ds_selected()
+        if ds is None:
+            return
+        cmp_ = dsets._cmp
+        cur = ds.test
+        guess = cmp_.guess_test(ds)
+        dlg = QDialog(self)
+        dlg.setWindowTitle(L("Versuchsdaten – ", "Test data – ") + ds.label)
+        v = QVBoxLayout(dlg)
+        info = QLabel(L("Angaben zum Versuch, aus dem die Probe stammt. Die lokalen Werte (Temperatur am Ende der Umformung, "
+                        "Umformgrad, Umformgeschwindigkeit) stammen z. B. aus der FE-Simulation an der Messstelle. "
+                        "Leere Felder werden nicht verwendet. Dezimalkomma oder -punkt.",
+                        "Details of the test the sample comes from. The local values (temperature at the end of forming, "
+                        "strain, strain rate) come e.g. from the FE simulation at the measured position. "
+                        "Empty fields are not used. Decimal comma or point."))
+        info.setWordWrap(True)
+        v.addWidget(info)
+        form = QFormLayout()
+        eds = {}
+        for key, de, en, unit, typ, nd in cmp_.TEST_FIELDS:
+            ed = QLineEdit()
+            val = cur.get(key)
+            if val not in (None, ""):
+                ed.setText(str(val) if typ == "str" else self._num_text(val))
+            if key in guess:
+                g = guess[key]
+                ed.setPlaceholderText(L("Vorschlag: ", "suggestion: ") + (str(g) if typ == "str" else self._num_text(g)))
+            if key == "position":
+                ed.setToolTip(L("„M“ oder „Mitte“ = Probenmitte (gefüllte Symbole), sonst offene Symbole, z. B. „SK“ = Schmiedekreuz",
+                                "“M” or “centre” = sample centre (filled symbols), otherwise open symbols, e.g. “SK” = forging cross"))
+            eds[key] = ed
+            form.addRow(L(de, en) + (f" [{unit}]" if unit else "") + ":", ed)
+        v.addLayout(form)
+        lbl_z = QLabel("")
+        lbl_z.setStyleSheet("color: #444;")
+        v.addWidget(lbl_z)
+
+        def collect(strict):
+            out = {}
+            for key, _de, _en, _u, typ, _nd in cmp_.TEST_FIELDS:
+                t = eds[key].text().strip()
+                if not t:
+                    continue
+                if typ == "str":
+                    out[key] = t
+                    continue
+                try:
+                    out[key] = self._parse_num(t)
+                except ValueError:
+                    if strict:
+                        raise ValueError(key) from None
+            return out
+
+        def update_z():
+            vals = collect(False)
+            fake = type("D", (), {"meta": {"versuch": vals}})()
+            parts = []
+            for basis, name in (("lokal", L("lokal", "local")), ("nominell", L("Prüfbedingung", "test condition"))):
+                z, src = cmp_.lnZ(fake, basis)
+                if z is not None and (basis == "nominell" or src == "lokal"):
+                    parts.append(f"ln Z ({name}) = {dez(z, 2)}")
+            lbl_z.setText((" | ".join(parts) + f"   (Q = {dez(cmp_.OPTIONS['Q_kJ'], 0)} kJ/mol)") if parts
+                          else L("ln Z: Temperatur und Umformgeschwindigkeit eintragen", "ln Z: enter temperature and strain rate"))
+
+        for ed in eds.values():
+            ed.textChanged.connect(lambda _t: update_z())
+        update_z()
+
+        bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        b_guess = bb.addButton(L("Vorschlag aus Bezeichnung", "Suggest from label"), QDialogButtonBox.ActionRole)
+        b_guess.setToolTip(L("Legierung, Prüftemperatur, Umformgeschwindigkeit und Position aus Bezeichnung und Dateiname "
+                             "in leere Felder übernehmen (z. B. „750-3, 350 °C / 10 s⁻¹, Mitte“)",
+                             "fill empty fields with alloy, test temperature, strain rate and position from label and file name "
+                             "(e.g. “750-3, 350 °C / 10 s⁻¹, centre”)"))
+        b_guess.setEnabled(bool(guess))
+
+        def apply_guess():
+            for key, g in guess.items():
+                if key in eds and not eds[key].text().strip():
+                    eds[key].setText(str(g) if isinstance(g, str) else self._num_text(g))
+        b_guess.clicked.connect(apply_guess)
+
+        def accept():
+            try:
+                vals = collect(True)
+            except ValueError as e:
+                key = str(e)
+                name = next(L(de, en) for k, de, en, *_ in cmp_.TEST_FIELDS if k == key)
+                QMessageBox.warning(dlg, app_title(), L(f"„{name}“ ist keine Zahl.", f"“{name}” is not a number."))
+                eds[key].setFocus()
+                return
+            for key in ("rate_s", "rate_lok_s"):
+                if key in vals and vals[key] <= 0:
+                    QMessageBox.warning(dlg, app_title(), L("Die Umformgeschwindigkeit muss größer als null sein.",
+                                                            "The strain rate must be greater than zero."))
+                    eds[key].setFocus()
+                    return
+            self.store.set_test(ds.id, vals)
+            dlg.accept()
+        bb.accepted.connect(accept)
+        bb.rejected.connect(dlg.reject)
+        v.addWidget(bb)
+        dlg.resize(560, 0)
+        if dlg.exec() == QDialog.Accepted:
+            self.log(L(f"Versuchsdaten gespeichert: „{ds.label}“", f"Test data stored: “{ds.label}”"))
+            self.refresh_datasets(select=ds.id)
+
+    def _ds_match_step(self):
+        dss = self.compare_datasets()
+        if len(dss) < 2:
+            return
+        steps = [(d, float(d.metrics.get("schrittweite_um") or 0)) for d in dss]
+        target0 = max(s for _, s in steps)
+        target, ok = QInputDialog.getDouble(
+            self, app_title(),
+            L("Gemeinsame Schrittweite in µm (Vorgabe: gröbste Schrittweite der angehakten Datensätze).\n"
+              "Feiner aufgelöste Datensätze werden auf dieses Raster umgerechnet (nächster Nachbar) und neu ausgewertet;\n"
+              "die Originale bleiben gespeichert und werden aus dem Vergleich genommen.",
+              "Common step size in µm (default: coarsest step size of the ticked datasets).\n"
+              "Datasets with a finer step are resampled to this grid (nearest neighbour) and analysed again;\n"
+              "the originals stay stored and are removed from the comparison."),
+            target0, target0, 10.0, 3)
+        if not ok:
+            return
+        todo, missing = [], []
+        for d, s in steps:
+            if s >= target * 0.999:
+                continue
+            if not d.path.exists():
+                missing.append(d.label)
+                continue
+            todo.append((d.id, target))
+        if missing:
+            QMessageBox.warning(self, app_title(), L("ctf-Datei nicht gefunden, wird übersprungen:\n", "ctf file not found, skipped:\n")
+                                + "\n".join(missing))
+        if not todo:
+            QMessageBox.information(self, app_title(), L("Alle angehakten Datensätze haben bereits diese Schrittweite.",
+                                                         "All ticked datasets already have this step size."))
+            return
+        if QMessageBox.question(self, app_title(),
+                                L(f"{len(todo)} Datensatz/Datensätze auf {dez(target, 3)} µm umrechnen und neu auswerten?\n\n"
+                                  "Das kann je Datensatz einige Minuten dauern.",
+                                  f"Resample {len(todo)} dataset(s) to {dez(target, 3)} µm and analyse again?\n\n"
+                                  "This can take a few minutes per dataset.")) != QMessageBox.Yes:
+            return
+        self._queue = todo
+        self._queue_restore = self.current_settings()
+        self._queue_next()
+
+    def _queue_next(self):
+        while self._queue:
+            ds_id, step = self._queue.pop(0)
+            ds = self.store.get(ds_id)
+            if ds is None:
+                continue
+            self.log(L(f"Schrittweite angleichen: „{ds.label}“ → {dez(step, 3)} µm", f"Matching step size: “{ds.label}” → {dez(step, 3)} µm"))
+            self.recompute(ds, resample=step)
+            return
+        self._queue_finish(L("Schrittweite angeglichen – angeglichene Datensätze stehen im Vergleich.",
+                             "Step size matched – resampled datasets are in the comparison."))
+
+    def _queue_finish(self, msg):
+        if self._queue_restore is not None:
+            self.apply_settings(self._queue_restore)
+            self._queue_restore = None
+        self.log(msg)
+        self.statusBar().showMessage(msg)
+        self.refresh_datasets()
+        self.rtabs.setCurrentIndex(2)
 
     def refresh_compare(self):
         if not hasattr(self, "cmp_preview"):
@@ -1460,6 +1796,8 @@ class MainWindow(QMainWindow):
         self.btn_cancel.setEnabled(busy)
         for b in getattr(self, "ds_buttons", [])[:4]:
             b.setEnabled(not busy)
+        if getattr(self, "ds_buttons", None):
+            self.ds_buttons[9].setEnabled(not busy)
         if not busy:
             self.btn_run.setEnabled(self.project is not None)
             self.btn_detect.setEnabled(self.project is not None)
@@ -1744,7 +2082,8 @@ class MainWindow(QMainWindow):
         self._store_result(res, previews)
         self._fill_results(res.available, res.kennwerte)
         self._update_shown_label()
-        if res.scratch_auto is not None and res.settings.scratch:  # automatische Erkennung in der Übersicht einblenden
+        same_grid = self.project is not None and (res.project.ny, res.project.nx) == (self.project.ny, self.project.nx)
+        if res.scratch_auto is not None and res.settings.scratch and same_grid:  # automatische Erkennung in der Übersicht einblenden
             p = res.project
             full = np.zeros((p.ny, p.nx), bool)
             r0, c0 = res.crop_px
@@ -1765,6 +2104,8 @@ class MainWindow(QMainWindow):
                 it = self.lst.item(i)
                 it.setCheckState(Qt.Checked if it.data(Qt.UserRole) in ex["fids"] else Qt.Unchecked)
             QTimer.singleShot(300, self.export)
+        if self._queue or self._queue_restore is not None:
+            QTimer.singleShot(300, self._queue_next)
         if self.autotest:
             self.ed_out.setText(self.autotest["out"])
             for cb in self.fmt.values():
@@ -1953,6 +2294,9 @@ class MainWindow(QMainWindow):
 
     def _on_failed(self, text, cancelled):
         self._pending = None
+        if self._queue or self._queue_restore is not None:
+            self._queue = []
+            self._queue_finish(L("Angleichen der Schrittweite abgebrochen.", "Matching of the step size stopped."))
         self._busy(False)
         self.bar.setRange(0, 100)
         self.bar.setValue(0)

@@ -1,4 +1,4 @@
-EBSD Analysis 1.3 – Windows program
+EBSD Analysis 1.4 – Windows program
 ====================================
 (Deutsch: siehe LIESMICH.txt)
 
@@ -40,6 +40,44 @@ OPERATION (short version – details in the program under Help -> Quick guide)
    Grain_list_subgrains.csv.
 
 
+NEW IN 1.4
+----------
+- Test data per dataset (tab "Datasets / Comparison" -> "Test data …"):
+  alloy, Fe/Si content, position, test temperature, test strain rate,
+  local temperature (end of forming), local strain phi, local strain rate phi_dot
+  (e.g. from the FE simulation at the measured position) and flow stress k_f. Decimal comma or point.
+  "Suggest from label" reads alloy, temperature, strain rate and position from labels such as
+  "750-3, 350 °C / 10 s⁻¹, centre".
+- Input field Q (kJ/mol, default 142) for the Zener-Hollomon parameter Z = phi_dot * exp(Q/RT);
+  all datasets are evaluated with the same Q. Option "ln Z from": local values (else test condition)
+  or always the test condition. ln Z appears in the key-figure table and in the CSV.
+- New comparison figures:
+    V2  misorientation now with Mackenzie distribution and cumulative curve
+    V3  key figures vs ln Z (overview of six key figures or one selectable key figure,
+        exponential fit per alloy from three centre datasets)
+    V4  recrystallized fraction vs distance to particles
+    V5  decomposition of the difference in recrystallized fraction (particle proximity vs
+        tendency to recrystallize; reference = first dataset) with what-if bars
+    V6  maps side by side (option "same scale")
+    V7  GOS classes as stacked bars, sorted by ln Z
+    V8  subgrain size distribution (cumulative and frequency)
+    V9  subgrain size and flow stress (Holt relation d * k_f / (G * b))
+    V10 geometric DRX (HAGB intercept along CD and subgrain size vs ln Z)
+    V11 KAM distribution and KAM per class
+    V12 comparability of the maps with warnings (step size, area, zero solutions,
+        share of the largest grains, number of grains, subgrain resolution)
+    V13 sensitivity of the recrystallized fraction to the GOS threshold
+  All figures are written with "Export comparison …".
+- Matching the step size: parameter "Resample step size to" (tab Parameters, 0 = off) resamples the
+  map to a coarser grid before the analysis (nearest neighbour). The button "Match step size …" does this
+  for all ticked datasets with a finer step (default: coarsest step size); the originals are kept.
+- Additional key figures: KAM median and 90 % quantile, KAM distribution, recrystallized fraction per
+  particle distance with area fractions, GOS sensitivity, share of the three largest grains, grain counts,
+  particle fraction, d10/d90 of grain and subgrain size.
+- Datasets from 1.2/1.3 remain usable; the additional key figures are read from the stored key figures
+  where possible. KAM distribution and GOS sensitivity require "Recalculate".
+
+
 NEW IN 1.3
 ----------
 - German / English user interface and outputs (see above).
@@ -68,7 +106,8 @@ Every analysis is stored automatically as a dataset (tab "Datasets / Comparison"
 restart. Double-click or "Show results" shows the stored results without recalculation; "Recalculate" loads the
 ctf file and calculates again with the stored settings, roles, area and scratch marks.
 Ticked datasets appear in the comparison: V1 key figures (subgrain size, HAGB fraction, recrystallized fraction in
-total and 0–1 µm from particles, <110> || compression direction) and V2 misorientation distribution, plus a table.
+total and 0–1 µm from particles, <110> || compression direction), V2 misorientation distribution and V3–V13
+(see NEW IN 1.4), plus a table.
 Storage: %LOCALAPPDATA%\EBSD-Auswertung\datensaetze.
 
 

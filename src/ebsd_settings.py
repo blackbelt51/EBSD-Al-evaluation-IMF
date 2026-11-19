@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass, fields
 from ebsd_i18n import L
 
 APP_NAME = "EBSD-Auswertung"
-APP_VERSION = "1.3"
+APP_VERSION = "1.4"
 ROLES = ("Matrix", "Partikel", "Fehlindizierung")          # interne Kennungen (so auch in gespeicherten Datensätzen)
 ROLE_NAMES = {"Matrix": ("Matrix", "Matrix"), "Partikel": ("Partikel", "Particle"),
               "Fehlindizierung": ("Fehlindizierung", "Misindexing")}
@@ -59,6 +59,7 @@ class Settings:
     scratch_min_len: float = 40.0
     scratch_rel_bc: float = 0.75
     scratch_window: float = 9.0
+    resample_um: float = 0.0      # Schrittweite angleichen (nächster Nachbar), 0 = aus (ab 1.4)
 
     def to_dict(self):
         return asdict(self)
@@ -124,6 +125,11 @@ PARAM_INFO = [
      "Scratches: relative BC threshold", "BC < value × surroundings = candidate"),
     ("scratch_window", "Kratzer: Fensterlänge", "µm", 2, 50, 0.5, 1, "gleitende Dichte entlang der Linie",
      "Scratches: window length", "sliding density along the line"),
+    ("resample_um", "Schrittweite angleichen auf", "µm", 0.0, 5.0, 0.05, 3,
+     "0 = aus. Größer als die Schrittweite der Karte: die Karte wird vor der Auswertung auf diese Schrittweite "
+     "ausgedünnt (nächster Nachbar), damit Karten mit unterschiedlicher Schrittweite vergleichbar werden",
+     "Resample step size to", "0 = off. Larger than the step size of the map: the map is thinned to this step size "
+     "before the analysis (nearest neighbour), so that maps with different step sizes become comparable"),
 ]
 
 
@@ -163,6 +169,22 @@ COMPARE_FIGURES = [
     ("V1", "Kennwerte-Vergleich", "V1_Vergleich_Kennwerte", "Comparison of key figures", "V1_Comparison_key_figures"),
     ("V2", "Misorientierungsverteilung", "V2_Vergleich_Misorientierung", "Misorientation distribution",
      "V2_Comparison_misorientation"),
+    # ab 1.4
+    ("V3", "Kennwerte über ln Z", "V3_Kennwerte_ueber_lnZ", "Key figures versus ln Z", "V3_Key_figures_vs_lnZ"),
+    ("V4", "Rekristallisation über Partikelabstand", "V4_Rekristallisation_Partikelabstand",
+     "Recrystallization versus particle distance", "V4_Recrystallization_particle_distance"),
+    ("V5", "Zerlegung des rekristallisierten Anteils", "V5_Zerlegung_Rekristallisation",
+     "Decomposition of the recrystallized fraction", "V5_Decomposition_recrystallization"),
+    ("V6", "Kartenvergleich IPF / GOS", "V6_Kartenvergleich", "Map comparison IPF / GOS", "V6_Map_comparison"),
+    ("V7", "GOS-Klassen", "V7_GOS-Klassen", "GOS classes", "V7_GOS_classes"),
+    ("V8", "Subkorngrößenverteilung", "V8_Subkorngroessenverteilung", "Subgrain size distribution",
+     "V8_Subgrain_size_distribution"),
+    ("V9", "Subkorngröße und Fließspannung", "V9_Subkorn_Fliessspannung", "Subgrain size and flow stress",
+     "V9_Subgrain_flow_stress"),
+    ("V10", "Geometrische DRX", "V10_Geometrische_DRX", "Geometric DRX", "V10_Geometric_DRX"),
+    ("V11", "KAM-Vergleich", "V11_KAM", "KAM comparison", "V11_KAM"),
+    ("V12", "Vergleichbarkeit der Karten", "V12_Vergleichbarkeit", "Comparability of the maps", "V12_Comparability"),
+    ("V13", "Sensitivität gegenüber θc", "V13_Sensitivitaet_GOS", "Sensitivity to θc", "V13_Sensitivity_GOS"),
 ]
 
 

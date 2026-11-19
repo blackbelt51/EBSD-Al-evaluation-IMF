@@ -28,6 +28,7 @@ from matplotlib.ticker import FuncFormatter
 
 from ebsd_settings import APP_NAME, APP_VERSION, compare_figures, fig_fname, kennwerte_name
 from ebsd_i18n import L, csv_join, dez, get_language, num_g
+import ebsd_compare as _cmp
 
 comma = FuncFormatter(lambda v, p: num_g(v))
 KENNWERTE_FILE = "Kennwerte_und_Parameter.txt"          # interner Dateiname in der Ablage (sprachunabhängig)
@@ -69,9 +70,10 @@ def default_label(path, crop_um=None):
     return lab
 
 
-def dataset_key(path, crop_um):
+def dataset_key(path, crop_um, resample_um=None):
     crop = "" if crop_um is None else ",".join(f"{float(v):.1f}" for v in crop_um)
-    return hashlib.sha1(f"{str(Path(path)).lower()}|{crop}".encode("utf-8")).hexdigest()[:12]
+    rs = f"|rs{float(resample_um):.4f}" if resample_um else ""          # angeglichene Schrittweite: eigener Datensatz (ab 1.4)
+    return hashlib.sha1(f"{str(Path(path)).lower()}|{crop}{rs}".encode("utf-8")).hexdigest()[:12]
 
 
 # ======================================================================== Datensätze
@@ -103,6 +105,11 @@ class Dataset:
         return {f.name: f.read_text(encoding="utf-8-sig") for g in TABLE_GLOBS for f in sorted(self.folder.glob(g))}
 
     @property
+    def test(self):
+        """Versuchsdaten (Legierung, Position, Prüfbedingung, lokale Werte, Fließspannung; ab 1.4)"""
+        return dict(self.meta.get("versuch") or {})
+
+    @property
     def strokes(self):
         """manuelle Kratzermarkierungen der Auswertung (ab Version 1.3)"""
         return list(self.metrics.get("kratzer_manuell") or [])
@@ -114,11 +121,15 @@ class Dataset:
         pts = k.get("punkte", ["?", "?"])
         sub = subgrains_on(self)
         n_str = len(self.strokes)
+        rs = k.get("resample_um")
         return (f"{k.get('datei', '')}"
                 + (L("  |  Ausschnitt ", "  |  crop ") + f"{'; '.join(dez(v, 1) for v in crop)} µm" if crop else "")
                 + "\n" + L(f"{pts[0]} × {pts[1]} Punkte, Schrittweite {dez(k.get('schrittweite_um'), 3)} µm  |  ausgewertet {t}",
                            f"{pts[0]} × {pts[1]} points, step size {dez(k.get('schrittweite_um'), 3)} µm  |  analysed {t}")
                 + ("" if sub is not False else L("  |  ohne Subkörner", "  |  without subgrains"))
+                + (L(f"  |  angeglichen von {dez(k.get('schrittweite_original_um'), 3)} µm",
+                     f"  |  resampled from {dez(k.get('schrittweite_original_um'), 3)} µm") if rs else "")
+                + (L("  |  Versuchsdaten eingetragen", "  |  test data entered") if self.test else "")
                 + (L(f"  |  {n_str} manuelle Kratzermarkierung(en)", f"  |  {n_str} manual scratch mark(s)") if n_str else ""))
 
     def save_meta(self):
@@ -164,7 +175,7 @@ class DatasetStore:
     def save_result(self, res, previews, label=None):
         """legt das Ergebnis einer Auswertung ab (gleiche Datei und gleicher Ausschnitt: wird ersetzt)"""
         k = dict(res.metrics)
-        ds_id = dataset_key(k.get("pfad", res.project.path), k.get("ausschnitt_um"))
+        ds_id = dataset_key(k.get("pfad", res.project.path), k.get("ausschnitt_um"), k.get("resample_um"))
         folder = self.root / ds_id
         old = self.get(ds_id)
         if folder.exists():
@@ -179,12 +190,16 @@ class DatasetStore:
         for name, text in res.tables.items():
             (folder / name).write_text(text, encoding="utf-8-sig")
         now = time.time()
+        lab = label or (old.meta.get("bezeichnung") if old else None) or default_label(k.get("pfad", ""), k.get("ausschnitt_um"))
+        if k.get("resample_um") and "µm Schritt" not in lab and "µm step" not in lab:
+            lab += L(f" ({dez(k['resample_um'], 2)} µm Schritt)", f" ({dez(k['resample_um'], 2)} µm step)")
         meta = {"id": ds_id, "programm": f"{APP_NAME} {APP_VERSION}", "sprache": get_language(),
-                "bezeichnung": label or (old.meta.get("bezeichnung") if old else None)
-                               or default_label(k.get("pfad", ""), k.get("ausschnitt_um")),
+                "bezeichnung": lab,
                 "im_vergleich": old.in_compare if old else True,
                 "erstellt": old.meta.get("erstellt", now) if old else now, "geaendert": now,
                 "abbildungen": [list(a) for a in res.available], "kennwerte": k}
+        if old and old.meta.get("versuch"):                   # Versuchsdaten bleiben bei „Neu berechnen“ erhalten
+            meta["versuch"] = old.meta["versuch"]
         ds = Dataset(folder, meta)
         ds.save_meta()
         if ds_id not in self._order():
@@ -195,6 +210,13 @@ class DatasetStore:
         ds = self.get(ds_id)
         if ds:
             ds.meta["bezeichnung"] = label.strip() or default_label(ds.path, ds.crop_um)
+            ds.save_meta()
+
+    def set_test(self, ds_id, values):
+        """Versuchsdaten eines Datensatzes speichern (leere Felder werden entfernt)"""
+        ds = self.get(ds_id)
+        if ds:
+            ds.meta["versuch"] = {k: v for k, v in (values or {}).items() if v not in (None, "")}
             ds.save_meta()
 
     def set_compare(self, ds_id, on):
@@ -218,6 +240,15 @@ def subgrains_on(ds):
 
 
 METRIC_ROWS = [  # (Beschriftung, Beschriftung engl., Schlüssel, Nachkommastellen)
+    ("Legierung", "Alloy", "t:legierung", "s"),
+    ("Position", "Position", "t:position", "s"),
+    ("Prüftemperatur (°C)", "Test temperature (°C)", "t:T_C", 0),
+    ("Umformgeschwindigkeit Prüfung (1/s)", "Strain rate test (1/s)", "t:rate_s", 3),
+    ("lokale Temperatur (°C)", "Local temperature (°C)", "t:T_lok_C", 1),
+    ("lokaler Umformgrad φ", "Local strain φ", "t:phi_lok", 2),
+    ("lokale Umformgeschwindigkeit (1/s)", "Local strain rate (1/s)", "t:rate_lok_s", 3),
+    ("Fließspannung k_f (MPa)", "Flow stress k_f (MPa)", "t:kf_MPa", 1),
+    ("ln Z (gemeinsames Q)", "ln Z (common Q)", "_lnZ", 2),
     ("Schrittweite (µm)", "Step size (µm)", "schrittweite_um", 3),
     ("Subkornerkennung", "Subgrain detection", "_subkoerner", None),
     ("Kratzer automatisch erkannt", "Scratches detected automatically", "kratzer_n", 0),
@@ -245,11 +276,33 @@ METRIC_ROWS = [  # (Beschriftung, Beschriftung engl., Schlüssel, Nachkommastell
     ("rekristallisiert 0–1 µm von Partikeln (%)", "recrystallized 0–1 µm from particles (%)", ("rx_abstand_pct", 0), 1),
     ("rekristallisierte Körner ECD Median (µm)", "recrystallized grains ECD median (µm)", "rx_korn_ecd_median_um", 2),
     ("<110> || CD (15°) (%)", "<110> || CD (15°) (%)", "faser110_CD_pct", 1),
+    ("Partikelanteil (%)", "Particle fraction (%)", "_partikel", 2),
+    ("3 größte Körner (% der Fläche)", "3 largest grains (% of the area)", "_big3", 1),
+    ("rx(0–1 µm) / rx(> 10 µm)", "rx(0–1 µm) / rx(> 10 µm)", "_rx_ratio", 2),
+    ("HAGB-Sehne CD / Subkorngröße", "HAGB intercept CD / subgrain size", "_gdrx", 2),
+    ("Holt-Konstante d·k_f/(G·b)", "Holt constant d·k_f/(G·b)", "_holt", 1),
 ]
 
 
 def metric(ds, key):
     k = ds.metrics
+    if isinstance(key, str) and key.startswith("t:"):
+        return _cmp.tval(ds, key[2:])
+    if key == "_lnZ":
+        return _cmp.lnZ(ds)[0]
+    if key == "_partikel":
+        return _cmp.xm(ds, "partikel_pct")
+    if key == "_big3":
+        b = _cmp.xm(ds, "groesste_koerner_pct")
+        return sum(b) if b else None
+    if key == "_rx_ratio":
+        v = _cmp.xm(ds, "rx_abstand_pct")
+        return v[0] / v[-1] if v and v[-1] else None
+    if key == "_gdrx":
+        h, s_ = k.get("sehne_hagb_CD_um"), k.get("subkorn_ecd_median_um")
+        return h / s_ if h and s_ else None
+    if key == "_holt":
+        return _cmp.holt_K(ds)
     if isinstance(key, tuple):
         v = k.get(key[0])
         return v[key[1]] if isinstance(v, list) and len(v) > key[1] else None
@@ -266,6 +319,8 @@ def metric(ds, key):
 
 
 def _cell(v, nd):
+    if nd == "s":
+        return "–" if v in (None, "") else str(v)
     if isinstance(v, bool):
         return L("an", "on") if v else L("aus", "off")
     return dez(v, nd)
@@ -278,7 +333,10 @@ def metrics_table(datasets):
 
 def metrics_csv(datasets):
     lines = [csv_join([L("Kennwert", "Quantity")] + [d.label for d in datasets]),
-             csv_join([L("Datei", "File")] + [d.metrics.get("datei", "") for d in datasets])]
+             csv_join([L("Datei", "File")] + [d.metrics.get("datei", "") for d in datasets]),
+             csv_join([L("Q für ln Z (kJ/mol)", "Q for ln Z (kJ/mol)"), dez(_cmp.OPTIONS["Q_kJ"], 1)]),
+             csv_join([L("ln Z aus", "ln Z from"), L("lokalen Werten (FE), sonst Prüfbedingung", "local values (FE), else test condition")
+                       if _cmp.OPTIONS["z_basis"] == "lokal" else L("Prüfbedingung", "test condition")])]
     lines += [csv_join([lab] + ["" if v == "–" else v for v in vals]) for lab, vals in metrics_table(datasets)]
     centers, curves = misori_curves(datasets)
     if curves:
@@ -287,6 +345,31 @@ def metrics_csv(datasets):
                   csv_join([L("Klassenmitte (°)", "Class centre (°)")] + [d.label for d in datasets])]
         for i, c in enumerate(centers):
             lines.append(csv_join([dez(c, 0)] + [dez(curves[d.id][i], 2) if d.id in curves else "" for d in datasets]))
+    dist = [(d, _cmp.xm(d, "rx_abstand_klassen"), _cmp.xm(d, "rx_abstand_pct"), _cmp.xm(d, "rx_abstand_flaeche_pct")) for d in datasets]
+    if any(x[2] for x in dist):
+        cls = next(x[1] for x in dist if x[1])
+        lines += ["", L("REKRISTALLISIERTER ANTEIL ÜBER DEM PARTIKELABSTAND (%; in Klammern: Flächenanteil der Klasse, %)",
+                        "RECRYSTALLIZED FRACTION VERSUS PARTICLE DISTANCE (%; in brackets: area fraction of the class, %)"),
+                  csv_join([L("Abstand (µm)", "Distance (µm)")] + [d.label for d in datasets])]
+        for i, c in enumerate(cls):
+            lines.append(csv_join([c] + [(dez(r[i], 1) + (f" ({dez(a[i], 1)})" if a else "")) if r and len(r) > i else ""
+                                         for _, _, r, a in dist]))
+    sens = [_cmp.xm(d, "gos_sens") for d in datasets]
+    if any(sens):
+        grid = next(g["grenzen_deg"] for g in sens if g)
+        lines += ["", L("SENSITIVITÄT REKRISTALLISIERTER ANTEIL (%)", "SENSITIVITY OF THE RECRYSTALLIZED FRACTION (%)"),
+                  csv_join(["θc (°)"] + [d.label for d in datasets])]
+        for i, t in enumerate(grid):
+            row = []
+            for g in sens:
+                if g and t in g["grenzen_deg"]:
+                    row.append(dez(g["rx_pct"][g["grenzen_deg"].index(t)], 2))
+                else:
+                    row.append("")
+            lines.append(csv_join([dez(t, 2)] + row))
+    _, warns = _cmp.comparability(datasets) if datasets else ([], [])
+    if warns:
+        lines += ["", L("HINWEISE ZUR VERGLEICHBARKEIT", "NOTES ON COMPARABILITY")] + [csv_join([w]) for w in warns]
     return "\n".join(lines) + "\n"
 
 
@@ -399,10 +482,32 @@ def fig_compare_kennwerte(datasets):
 def fig_compare_misori(datasets):
     centers, curves = misori_curves(datasets)
     col = colors_for(datasets)
-    fig, ax = plt.subplots(figsize=(10, 6.2), dpi=100)
+    fig, (ax, axc) = plt.subplots(1, 2, figsize=(16, 6.2), dpi=100, gridspec_kw=dict(width_ratios=[1.25, 1]))
     for d in datasets:
         if d.id in curves:
             ax.plot(centers, curves[d.id], "-o", ms=3.5, lw=1.8, color=col[d.id], label=d.label)
+            axc.plot(np.r_[centers[0] - 1, centers + 1], np.r_[0, np.cumsum(curves[d.id])], "-", lw=1.8, color=col[d.id], label=d.label)
+    try:                                                        # regellose Verteilung kubischer Kristalle (ab 1.4)
+        mc, mh = _cmp.mackenzie()
+        lagb_ = _common(datasets, "lagb") or 2.0
+        sel = mc >= lagb_
+        mh2 = mh[sel] / mh[sel].sum() * 100
+        ax.plot(mc[sel], mh2, "--", color="0.45", lw=1.4, label=L("regellos (Mackenzie)", "random (Mackenzie)"))
+        axc.plot(np.r_[mc[sel][0] - 1, mc[sel] + 1], np.r_[0, np.cumsum(mh2)], "--", color="0.45", lw=1.4,
+                 label=L("regellos (Mackenzie)", "random (Mackenzie)"))
+    except Exception:  # noqa: BLE001
+        pass
+    axc.set_xlim(0, 64)
+    axc.set_ylim(0, 101)
+    axc.grid(alpha=0.3)
+    axc.xaxis.set_major_formatter(comma)
+    axc.yaxis.set_major_formatter(comma)
+    axc.set_xlabel(L("Misorientierung (°)", "Misorientation (°)"))
+    axc.set_ylabel(L("Summenanteil (%)", "Cumulative fraction (%)"))
+    axc.set_title(L("Summenkurve", "Cumulative distribution"), fontsize=12)
+    hagb_ = _common(datasets, "hagb")
+    if hagb_:
+        axc.axvline(hagb_, color="0.4", ls="--", lw=1.2)
     hagb = _common(datasets, "hagb")
     for h in ({hagb} if hagb else {d.metrics.get("hagb") for d in datasets if d.metrics.get("hagb")}):
         ax.axvline(h, color="0.4", ls="--", lw=1.2)
@@ -419,6 +524,7 @@ def fig_compare_misori(datasets):
                  fontsize=12)
     if curves:
         ax.legend(frameon=False, fontsize=10)
+        axc.legend(frameon=False, fontsize=9, loc="lower right")
     else:
         ax.text(0.5, 0.5, L("Keine Korngrenzauswertung in den gewählten Datensätzen",
                             "No grain boundary analysis in the selected datasets"), transform=ax.transAxes,
@@ -428,6 +534,7 @@ def fig_compare_misori(datasets):
 
 
 COMPARE_BUILDERS = {"V1": fig_compare_kennwerte, "V2": fig_compare_misori}
+COMPARE_BUILDERS.update(_cmp.BUILDERS)                          # V3–V13 (ab 1.4)
 
 
 def compare_png(fid, datasets, dpi=100):
