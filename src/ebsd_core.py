@@ -138,6 +138,30 @@ class EBSDProject:
                f"loaded: {path.name} – {p.nx} × {p.ny} points, step size {dez(step, 4)} µm ({time.time() - t0:.1f} s)"))
         return p
 
+    def resampled(self, step_new):
+        """Karte mit größerer Schrittweite (nächster Nachbar auf ein neues Quadratraster), z. B. um Karten mit
+        unterschiedlicher Schrittweite vergleichbar zu machen. Gleiche oder kleinere Schrittweite: unverändert."""
+        step_new = float(step_new)
+        if not np.isfinite(step_new) or step_new <= self.step * 1.001:
+            return self
+        e = self.ebsd
+        rows = np.round(np.arange(0.0, self.ny * self.step - 1e-9, step_new) / self.step).astype(int)
+        cols = np.round(np.arange(0.0, self.nx * self.step - 1e-9, step_new) / self.step).astype(int)
+        rows, cols = rows[rows < self.ny], cols[cols < self.nx]
+        sub = e[rows, :][:, cols]
+        ny, nx = len(rows), len(cols)
+        yy, xx = np.meshgrid(np.arange(ny) * step_new, np.arange(nx) * step_new, indexing="ij")
+        xyz = np.stack([xx, yy, np.zeros_like(xx)], -1)
+        prop = {k: np.asarray(sub.prop[k]).reshape(ny, nx) for k in sub.prop.keys()}
+        meta = dict(e.meta) if getattr(e, "meta", None) else {}
+        if isinstance(meta.get("header"), dict):
+            meta["header"] = dict(meta["header"], XStep=step_new, YStep=step_new, XCells=nx, YCells=ny)
+        new = EBSD(xyz, sub.rotations, np.asarray(sub.phaseId).reshape(ny, nx), sub.CSList, prop=prop, frame=e.pos.frame,
+                   meta=meta, phaseMap=sub.phaseMap, scanUnit=e.scanUnit)
+        p = EBSDProject(self.path, new, step_new)
+        p.step_original = self.step
+        return p
+
     def default_roles(self):
         """häufigste Phase = Matrix; übrige Phasen mit MAD-Median ≤ 0,8° = Partikel, sonst Fehlindizierung"""
         idx = [p for p in self.phases if p["index"] > 0]
@@ -619,6 +643,14 @@ def analyze(project: EBSDProject, S: Settings, roles: dict, crop_um=None, progre
         if progress:
             progress(int(p), msg)
         say(msg)
+
+    # ------------------------------------------------------------------ Schrittweite angleichen (ab 1.4)
+    STEP_ORIG = project.step
+    if getattr(S, "resample_um", 0.0) and S.resample_um > project.step * 1.001:
+        prog(0, tx(f"Schrittweite von {dez(project.step, 3)} auf {dez(S.resample_um, 3)} µm angleichen",
+                   f"Resampling the step size from {dez(project.step, 3)} to {dez(S.resample_um, 3)} µm"))
+        project = project.resampled(S.resample_um)
+    RESAMPLED = project.step > STEP_ORIG * 1.001
 
     # ------------------------------------------------------------------ Rollen
     iAL = [i for i, r in roles.items() if r == "Matrix"]
@@ -1943,7 +1975,9 @@ def analyze(project: EBSDProject, S: Settings, roles: dict, crop_um=None, progre
          tx("Datei: ", "File: ") + project.path.name
          + (tx("  |  Ausschnitt ", "  |  area ") + f"{tuple(round(v, 1) for v in crop_um)} µm" if crop_um is not None else ""),
          tx(f"Karte: {NX} x {NY} Punkte, Schrittweite {dez(STEP, 4)} µm, Fläche {dez(W_UM, 1)} x {dez(H_UM, 1)} µm",
-            f"Map: {NX} x {NY} points, step size {dez(STEP, 4)} µm, area {dez(W_UM, 1)} x {dez(H_UM, 1)} µm"),
+            f"Map: {NX} x {NY} points, step size {dez(STEP, 4)} µm, area {dez(W_UM, 1)} x {dez(H_UM, 1)} µm")
+         + (tx(f" (Schrittweite angeglichen von {dez(STEP_ORIG, 4)} µm, nächster Nachbar)",
+               f" (step size resampled from {dez(STEP_ORIG, 4)} µm, nearest neighbour)") if RESAMPLED else ""),
          tx("Probenkoordinaten: RD = x (horizontal), CD (Stauchrichtung) = y (vertikal), TD = z (Schliffnormale); MTEX-Darstellung y↓→x",
             "Specimen axes: RD = x (horizontal), CD (compression direction) = y (vertical), TD = z (section normal); MTEX display y↓→x"),
          tx("Phasenrollen: ", "Phase roles: ") + "; ".join(f"{names[i]} = {role_name(roles[i])}" for i in sorted(roles)),
@@ -2189,6 +2223,26 @@ def analyze(project: EBSDProject, S: Settings, roles: dict, crop_um=None, progre
         M.update(subkorn_ecd_median_um=num(sumL["ecd_med"]), subkorn_ecd_mittel_um=num(sumL["ecd_mean"]),
                  korn_ecd_median_um=num(sumH["ecd_med"]), korn_ecd_mittel_um=num(sumH["ecd_mean"]),
                  astm_G=num(astm_G), subkorn_aufloesung_schritte=num(sub_res))
+    # zusätzliche Kennwerte für die Vergleichsabbildungen (ab 1.4)
+    M["programm_version"] = APP_VERSION
+    M["schrittweite_original_um"] = num(STEP_ORIG)
+    M["resample_um"] = num(STEP) if RESAMPLED else None
+    M["phasen_bereinigt_pct"] = {names[ip]: num(clean_frac[ip]) for ip in iPARTS}
+    M["partikel_pct"] = num(sum(clean_frac[ip] for ip in iPARTS)) if iPARTS else 0.0
+    if kam is not None and kv.size:
+        kh, ke = np.histogram(kv, bins=np.arange(0.0, float(S.kam_max) + 0.05 + 1e-9, 0.05))
+        M.update(kam_median_deg=num(np.median(kv)), kam_q90_deg=num(np.percentile(kv, 90)),
+                 kam_hist={"kanten": [float(v) for v in ke], "anzahl": kh.astype(int).tolist()})
+    if S.rx:
+        M.update(rx_abstand_flaeche_pct=[num(v) for v in area_vs_dist],
+                 gos_sens={"grenzen_deg": [float(v) for v in theta_scan], "rx_pct": [num(v) for v in rx_scan]},
+                 groesste_koerner_pct=[num(v) for v in big3], n_koerner=int(nGH),
+                 n_koerner_klassifizierbar=int(valid_g.sum()), n_subkoerner=int(nGS) if SUBG else None,
+                 kam_klassen_deg={k: num(v) for k, v in kam_cls.items()},
+                 faser110_klassen_pct={k: num(v) for k, v in fib_cls.items()})
+    if S.grainsize:
+        M.update(subkorn_ecd_d10_um=num(sumL["d10"]) if SUBG else None, subkorn_ecd_d90_um=num(sumL["d90"]) if SUBG else None,
+                 korn_ecd_d10_um=num(sumH["d10"]), korn_ecd_d90_um=num(sumH["d90"]))
     say(tx(f"Auswertung fertig ({time.time() - T0:.0f} s)", f"Analysis finished ({time.time() - T0:.0f} s)"))
     return Result(builders, "\n".join(K), S, project, crop_um, summary, tables, metrics=M,
                   scratch_auto=scratch_auto, crop_px=(r0, c0), strokes=strokes)

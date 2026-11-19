@@ -30,8 +30,10 @@ python -m pip install -r requirements.txt || goto :fehler
 python -m PyInstaller --noconfirm --clean --workpath "%BUILD%\work" --distpath "%BUILD%\dist" EBSD-Auswertung.spec || goto :fehler
 copy /y LIESMICH.txt "%BUILD%\dist\EBSD-Auswertung\" >nul
 copy /y README_EN.txt "%BUILD%\dist\EBSD-Auswertung\" >nul
-if exist EBSD-Analysis_1.3_Documentation.pdf copy /y EBSD-Analysis_1.3_Documentation.pdf "%BUILD%\dist\EBSD-Auswertung\" >nul
-if exist ..\docs\EBSD-Analysis_1.3_Documentation.pdf copy /y ..\docs\EBSD-Analysis_1.3_Documentation.pdf "%BUILD%\dist\EBSD-Auswertung\" >nul
+rem Dokumentation: 1.4, falls vorhanden, sonst 1.3
+set "DOK="
+for %%D in (EBSD-Analysis_1.3_Documentation.pdf ..\docs\EBSD-Analysis_1.3_Documentation.pdf EBSD-Analysis_1.4_Documentation.pdf ..\docs\EBSD-Analysis_1.4_Documentation.pdf) do if exist "%%D" set "DOK=%%D"
+if defined DOK copy /y "%DOK%" "%BUILD%\dist\EBSD-Auswertung\" >nul
 
 echo.
 echo Fertig: %BUILD%\dist\EBSD-Auswertung\EBSD-Auswertung.exe

@@ -1,4 +1,4 @@
-EBSD-Auswertung 1.3 – Windows-Programm
+EBSD-Auswertung 1.4 – Windows-Programm
 =======================================
 (English: see README_EN.txt)
 
@@ -39,6 +39,45 @@ BEDIENUNG (Kurzfassung – ausführlich im Programm unter Hilfe -> Kurzanleitung
 
 Die Parameter (Reiter "Parameter") werden beim Beenden gespeichert und lassen sich über
 Datei -> Einstellungen speichern/laden als JSON-Datei weitergeben.
+
+
+NEU IN 1.4
+----------
+- Versuchsdaten je Datensatz (Reiter "Datensätze / Vergleich" -> "Versuchsdaten …"):
+  Legierung, Fe-/Si-Gehalt, Position, Prüftemperatur, Prüf-Umformgeschwindigkeit,
+  lokale Temperatur (Ende der Umformung), lokaler Umformgrad phi, lokale Umformgeschwindigkeit phi_punkt
+  (z. B. aus der FE-Simulation an der Messstelle) und Fließspannung k_f. Dezimalkomma oder -punkt.
+  "Vorschlag aus Bezeichnung" liest Legierung, Temperatur, Umformgeschwindigkeit und Position aus
+  Bezeichnungen wie "750-3, 350 °C / 10 s⁻¹, Mitte".
+- Eingabefeld Q (kJ/mol, Vorgabe 142) für den Zener-Hollomon-Parameter Z = phi_punkt * exp(Q/RT);
+  alle Datensätze werden mit demselben Q bewertet. Auswahl "ln Z aus": lokale Werte (sonst Prüfbedingung)
+  oder immer die Prüfbedingung. ln Z erscheint in der Kennwerte-Tabelle und in der CSV.
+- Neue Vergleichsabbildungen:
+    V2  Misorientierung jetzt mit Mackenzie-Verteilung und Summenkurve
+    V3  Kennwerte über ln Z (Übersicht mit sechs Kennwerten oder ein wählbarer Kennwert,
+        exponentielle Anpassung je Legierung ab drei Datensätzen der Probenmitte)
+    V4  rekristallisierter Anteil über dem Abstand zu Partikeln
+    V5  Zerlegung des Unterschieds im rekristallisierten Anteil (Partikelnähe gegenüber
+        Rekristallisationsneigung; Bezug = erster Datensatz) mit Was-wäre-wenn-Balken
+    V6  Karten nebeneinander (Option "gleicher Maßstab")
+    V7  GOS-Klassen als gestapelte Balken, sortiert nach ln Z
+    V8  Subkorngrößenverteilung (Summenkurve und Häufigkeit)
+    V9  Subkorngröße und Fließspannung (Holt-Beziehung d * k_f / (G * b))
+    V10 geometrische DRX (HAGB-Sehnenlänge in CD und Subkorngröße über ln Z)
+    V11 KAM-Verteilung und KAM je Klasse
+    V12 Vergleichbarkeit der Karten mit Warnungen (Schrittweite, Fläche, Nulllösungen,
+        Anteil der größten Körner, Kornzahl, Auflösung der Subkörner)
+    V13 Empfindlichkeit des rekristallisierten Anteils gegenüber der GOS-Grenze
+  Alle Abbildungen werden mit "Vergleich exportieren …" geschrieben.
+- Schrittweite angleichen: Parameter "Schrittweite angleichen auf" (Reiter Parameter, 0 = aus) rechnet
+  die Karte vor der Auswertung auf ein gröberes Raster um (nächster Nachbar). Der Knopf
+  "Schrittweite angleichen …" macht das für alle angehakten Datensätze mit feinerer Schrittweite
+  (Vorgabe: gröbste Schrittweite); die Originale bleiben gespeichert.
+- Zusätzliche Kennwerte: KAM-Median und 90-%-Quantil, KAM-Verteilung, rekristallisierter Anteil je
+  Partikelabstand mit Flächenanteilen, GOS-Empfindlichkeit, Anteil der drei größten Körner, Kornzahlen,
+  Partikelanteil, d10/d90 der Korn- und Subkorngröße.
+- Datensätze aus 1.2/1.3 bleiben nutzbar; die zusätzlichen Kennwerte werden, soweit möglich, aus den
+  gespeicherten Kennwerten gelesen. KAM-Verteilung und GOS-Empfindlichkeit erfordern "Neu berechnen".
 
 
 NEU IN 1.3
@@ -83,13 +122,14 @@ DATENSÄTZE UND VERGLEICH (neu in 1.2)
        Anteil gesamt und 0–1 µm von Partikeln, Anteil <110> || Stauchrichtung (±15°)
     V2 Misorientierungsverteilung: Linienschnitt RD+CD, 2°-Klassen, alle Datensätze überlagert
   Darunter eine Tabelle der wichtigsten Kennwerte. Bezeichnung ("Umbenennen") und Reihenfolge
-  (▲/▼) bestimmen Beschriftung und Farben. "Vergleich exportieren" schreibt V1, V2 in den unter
+  (▲/▼) bestimmen Beschriftung und Farben. "Vergleich exportieren" schreibt V1–V13 (siehe NEU IN 1.4) in den unter
   "Ergebnisse" gewählten Formaten und Vergleich_Kennwerte.csv (Semikolon, Dezimalkomma).
 - Ablage: %LOCALAPPDATA%\EBSD-Auswertung\datensaetze (Datei -> Ordner der gespeicherten Datensätze öffnen).
 
 
 HINWEISE
 --------
+- Neu in 1.4: Versuchsdaten, Q, Vergleichsabbildungen V3–V13, Schrittweite angleichen (siehe oben).
 - Neu in 1.3: Englisch, manuelle Kratzermarkierungen, Subkornerkennung abwählbar (siehe oben).
 - Neu in 1.2: gespeicherte Datensätze, Vergleichsabbildungen V1/V2, Vergleichstabelle (siehe oben).
 - Neu in 1.1: Korngröße (HAGB-Körner), Subkorngröße (Grenzen >= LAGB) und Aspektverhältnis,

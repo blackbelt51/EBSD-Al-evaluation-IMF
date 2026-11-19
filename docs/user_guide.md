@@ -1,12 +1,12 @@
-# EBSD Analysis 1.3 – User and Training Documentation
+# EBSD Analysis 1.4 – User and Training Documentation
 
-Version 1.3 · November 2026 · Institute of Metal Forming (IMF), TU Bergakademie Freiberg
+Version 1.4 · November 2026 · Institute of Metal Forming (IMF), TU Bergakademie Freiberg
 
-A PDF version of this document is available: [EBSD-Analysis_1.3_Documentation.pdf](EBSD-Analysis_1.3_Documentation.pdf)
+A PDF version for version 1.3 is available: [EBSD-Analysis_1.3_Documentation.pdf](EBSD-Analysis_1.3_Documentation.pdf)
 
 ## 1 Introduction
 
-EBSD Analysis 1.3 turns an Oxford/AZtec `.ctf` map of an aluminium alloy into a complete, reproducible set of figures, key figures and grain lists in a few minutes, without writing code. It was developed at the Institute of Metal Forming (IMF), TU Bergakademie Freiberg, for hot-deformed and forged AW-6082 and related Al–Mg–Si alloys, but works for any cubic matrix with one main phase.
+EBSD Analysis 1.4 turns an Oxford/AZtec `.ctf` map of an aluminium alloy into a complete, reproducible set of figures, key figures and grain lists in a few minutes, without writing code. It was developed at the Institute of Metal Forming (IMF), TU Bergakademie Freiberg, for hot-deformed and forged AW-6082 and related Al–Mg–Si alloys, but works for any cubic matrix with one main phase.
 
 All crystallographic calculations (orientations, misorientations, grain reconstruction, KAM, ODF) are done with **MTEX for Python**. The program adds the data cleaning, the classification rules, the figure layout and the bookkeeping around it.
 
@@ -26,6 +26,8 @@ All crystallographic calculations (orientations, misorientations, grain reconstr
 - Grain size, subgrain size and grain shape (aspect ratio, orientation of the major axis), with full grain lists as CSV
 - Scratch detection and removal, automatic and manual
 - A stored dataset per analysis, and comparison figures across several datasets
+
+**New in version 1.4:** test data per dataset (including local temperature, strain and strain rate), a common activation energy Q for ln Z, comparison figures V3–V13 across process conditions and resampling to a common step size.
 
 **New in version 1.3:** English user interface and outputs, manual marking and unmarking of scratches, and a switch for subgrain detection (for maps whose step size is too coarse to resolve subgrains).
 
@@ -112,7 +114,7 @@ The tab *Parameters* holds all numerical thresholds (section 9). Below both tabs
 | --- | --- |
 | Overview / area / scratches | Band contrast map of the whole file; tools *Area*, *Mark scratch*, *Unmark*; line width; Undo, Clear all; zoom and pan toolbar; *Show automatic detection*; *Show marks* |
 | Results | Figure list (tick = export), preview with zoom, export settings (folder, formats, dpi, raster maps in PDF/SVG) |
-| Datasets / Comparison | Stored datasets, comparison figures V1/V2 and comparison table |
+| Datasets / Comparison | Stored datasets, test data, comparison figures V1–V13 and comparison table |
 | Key figures | All numbers and parameters of the current or selected dataset as text |
 | Log | Progress messages, timings, warnings and error details |
 
@@ -378,17 +380,37 @@ Every analysis is stored automatically as a dataset, so you can review, export a
 | up / down | Order of the datasets in the comparison figures |
 | all / none | Ticks or unticks all datasets for the comparison |
 
-Ticked datasets appear in two comparison figures and a table:
+| Test data … | Alloy, Fe/Si content, position, test temperature and strain rate, local temperature, local strain φ, local strain rate φ̇ and flow stress k_f of the selected dataset (new in 1.4) |
+| Match step size … | Resamples all ticked datasets with a finer step to the coarsest step and analyses them again (new in 1.4) |
+
+**Test data and Zener–Hollomon parameter (new in 1.4).** Comparisons across process conditions need the test conditions of each specimen. *Test data …* stores them with the dataset. The local values (temperature at the end of forming, strain, strain rate) usually come from the FE simulation at the measured position; if they are missing, the test conditions are used. *Suggest from label* fills empty fields from labels such as "750-3, 350 °C / 10 s⁻¹, centre". Position "M" or "centre" is drawn with filled symbols, other positions with open symbols.
+
+Above the figure, **Q** sets the common apparent activation energy (default 142 kJ/mol) for Z = φ̇·exp(Q/RT), and *ln Z from* chooses local values or test conditions. Use the same Q for all datasets: Q fitted per flow curve mixes the material response into the abscissa, and ln Z then no longer forms one scale.
+
+Ticked datasets appear in the comparison figures and a table:
 
 - **V1 Comparison of key figures:** subgrain size (median ECD), HAGB fraction, recrystallized fraction in total and within 0–1 µm of particles, ⟨110⟩ ∥ CD fibre fraction.
-- **V2 Misorientation distribution:** the distributions of all datasets overlaid (2° classes).
-- **Table:** about 27 key figures per dataset, including step size, subgrain detection on/off and the number of manual scratch marks.
+- **V2 Misorientation distribution:** distributions overlaid (2° classes) with the Mackenzie distribution, plus cumulative curves.
+- **V3 Key figures vs ln Z:** overview of six key figures, or one key figure selected in *Key figure (V3)*; exponential fit per alloy over at least three centre datasets.
+- **V4 Recrystallized fraction vs particle distance**, with the area fraction of each distance class.
+- **V5 Decomposition:** splits the difference in recrystallized fraction to the first dataset into a part from particle proximity (area fractions of the distance classes) and a part from the tendency to recrystallize at equal distance; what-if bars.
+- **V6 Maps side by side:** IPF ∥ CD and GOS classes from the stored previews; *same scale (V6)* draws all maps at one µm scale.
+- **V7 GOS classes** as stacked bars, sorted by ln Z.
+- **V8 Subgrain size distribution:** cumulative curve and frequency (from the subgrain lists).
+- **V9 Subgrain size and flow stress:** d/b vs k_f/G with lines of constant K = d·k_f/(G·b) (Holt relation; G(T) of aluminium, b = 0.286 nm).
+- **V10 Geometric DRX:** HAGB intercept length along CD and subgrain size vs ln Z.
+- **V11 KAM:** distribution (new analyses) or mean/median/90 % quantile, and KAM per recrystallization class.
+- **V12 Comparability:** step size, map area, zero solutions, share of the three largest grains, number of classifiable grains, subgrain size in step sizes; warnings where maps are not directly comparable.
+- **V13 Sensitivity to θc:** recrystallized fraction for GOS thresholds around the chosen value.
+- **Table:** test data, ln Z and about 30 key figures per dataset.
 
-*Export comparison* writes V1 and V2 in the formats and resolution selected under *Results*, plus `Comparison_key_figures.csv`. *Copy table* puts the same table on the clipboard for Excel.
+*Export comparison* writes V1–V13 in the formats and resolution selected under *Results*, plus `Comparison_key_figures.csv` (including Q, the ln Z basis and the comparability warnings). *Copy table* puts the table on the clipboard for Excel.
+
+**Common step size (new in 1.4).** KAM, subgrain size and HAGB fraction depend on the step size. *Match step size …* proposes the coarsest step of the ticked datasets, resamples the finer maps by nearest neighbour onto that grid and analyses them again with their stored settings, roles, area and scratch marks. The resampled datasets get the suffix "(x µm step)", take over the test data and replace the originals in the comparison; the originals stay stored. The parameter *Resample step size to* (tab *Parameters*, 0 = off) does the same for a single analysis.
 
 **Exporting a stored dataset.** Previews are stored at screen resolution. For publication-quality figures, choose *Recalculate and export*; this takes as long as a new analysis. *Copy previews and key figures* is instant but gives preview resolution only.
 
-Datasets stored with version 1.2 remain usable; they count as "with subgrain detection" and "no manual marks".
+Datasets stored with version 1.2 remain usable; they count as "with subgrain detection" and "no manual marks". Datasets stored with 1.2 or 1.3 work in all comparison figures; the additional key figures are read from the stored key figures text. KAM distribution (V11) and GOS sensitivity (V13) need *Recalculate*.
 
 ## 12 Language settings
 
@@ -434,7 +456,7 @@ Most wrong EBSD conclusions do not come from software errors but from comparing 
 
 **What to write in a report or thesis**
 
-State at least: program and version (EBSD Analysis 1.3, MTEX for Python), step size, map area, cleaning steps (scratches automatic/manual, Mg₂Si detection, filled area fraction), thresholds (LAGB, HAGB, θc, minimum grain size), and which grain size measure you used. All of this is in the key figures file; attach it to your raw data.
+State at least: program and version (EBSD Analysis 1.4, MTEX for Python), step size, map area, cleaning steps (scratches automatic/manual, Mg₂Si detection, filled area fraction), thresholds (LAGB, HAGB, θc, minimum grain size), and which grain size measure you used. All of this is in the key figures file; attach it to your raw data.
 
 ## 14 Troubleshooting and FAQ
 
@@ -464,13 +486,14 @@ State at least: program and version (EBSD Analysis 1.3, MTEX for Python), step s
 
 ## 15 For developers: code structure, build and self-test
 
-The program is written in Python (PySide6 for the interface, MTEX for Python for crystallography, NumPy/SciPy/matplotlib). The source code is in the folder `EBSD-Auswertung_1.3_Quellcode\EBSD-Auswertung_Quellcode`.
+The program is written in Python (PySide6 for the interface, MTEX for Python for crystallography, NumPy/SciPy/matplotlib). The source code is in the folder `EBSD-Auswertung_1.4_Quellcode\EBSD-Auswertung_Quellcode`.
 
 | File | Responsibility |
 | --- | --- |
 | `ebsd_gui.py` | Main window, overview canvas with drawing tools, background tasks, export, language restart, command-line modes |
 | `ebsd_core.py` | Loading ctf files (`EBSDProject`), scratch detection, cleaning, all analyses, all figures, key figures, grain lists (`analyze` → `Result`) |
-| `ebsd_datasets.py` | Dataset store, comparison table, comparison figures V1/V2 |
+| `ebsd_datasets.py` | Dataset store, comparison table, comparison figures V1/V2, CSV export |
+| `ebsd_compare.py` | Comparison figures V3–V13, test data fields, Zener–Hollomon parameter, comparability check, Mackenzie distribution |
 | `ebsd_settings.py` | `Settings` dataclass, parameter list, figure list (German and English titles and file names), version |
 | `ebsd_i18n.py` | Language switch `L(german, english)`, number formatting, CSV helpers |
 | `ebsd_marks.py` | Manual scratch marks: rasterising lines into masks, combining with the automatic mask |
@@ -488,7 +511,7 @@ The program is written in Python (PySide6 for the interface, MTEX for Python for
 
 1. Python 3.13 (64 bit) with the packages in `requirements.txt` (exact versions).
 2. Run `build_windows.bat` in the source folder. The program is built into `%LOCALAPPDATA%\EBSD-Build\dist\EBSD-Auswertung`.
-3. Close the running program and run `uebernehmen.bat`. It moves the previous version (program and source folder) into `alte Versionen\V1.2` and copies the new build into the program folder.
+3. Close the running program and run `uebernehmen.bat`. It moves the previous version (program and source folder) into `alte Versionen\V1.3` and copies the new build into the program folder.
 
 **Self-test without user interface**
 

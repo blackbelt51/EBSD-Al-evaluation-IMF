@@ -7,7 +7,7 @@ figures, key figures and grain lists in a few minutes, without writing code.
 Developed at the Institute of Metal Forming (IMF), TU Bergakademie Freiberg, for hot-deformed and forged
 AW-6082 and related Al–Mg–Si alloys. It works for any map with one cubic matrix phase.
 
-**Current version: 1.3** · User interface and outputs in English or German
+**Current version: 1.4** · User interface and outputs in English or German
 
 ![Overview tab with automatic (red) and manual scratch marks (magenta, light blue)](docs/images/overview_scratch_marking.png)
 
@@ -26,6 +26,10 @@ AW-6082 and related Al–Mg–Si alloys. It works for any map with one cubic mat
   number G, aspect ratio and orientation of the major axis; grain and subgrain lists as CSV
 - **Subgrain detection switch** for maps whose step size is too coarse to resolve subgrains (new in 1.3)
 - **Datasets and comparison:** every analysis is stored; comparison figures and tables across specimens
+- **Comparison across process conditions** (new in 1.4): test data per dataset (incl. local T, φ, φ̇ from FE),
+  common activation energy Q for ln Z, figures V3–V13 (key figures vs ln Z, PSN decomposition, GOS classes,
+  subgrain size distribution, Holt relation, geometric DRX, KAM, comparability check, GOS sensitivity)
+- **Resampling to a common step size** for fair comparison of maps with different step sizes (new in 1.4)
 - **Export** as PNG, PDF, SVG, TIFF at any resolution; key figures with the complete parameter set
 - **English / German** user interface, figures, key figures and CSV files (new in 1.3)
 
@@ -37,7 +41,7 @@ AW-6082 and related Al–Mg–Si alloys. It works for any map with one cubic mat
 
 - **[User and training guide](docs/user_guide.md)** – installation, quick-start tutorial, all methods and
   parameters, output files, good practice, troubleshooting, developer notes
-  ([PDF version](docs/EBSD-Analysis_1.3_Documentation.pdf))
+  ([PDF version, still for 1.3](docs/EBSD-Analysis_1.3_Documentation.pdf))
 - [`src/README_EN.txt`](src/README_EN.txt) / [`src/LIESMICH.txt`](src/LIESMICH.txt) – short readme shipped with the program (English / German)
 - [CHANGELOG.md](CHANGELOG.md) – version history
 
@@ -47,7 +51,8 @@ AW-6082 and related Al–Mg–Si alloys. It works for any map with one cubic mat
 src/                     program source code and build scripts
   ebsd_gui.py            main window (PySide6), drawing tools, export, command-line modes
   ebsd_core.py           ctf loading, cleaning, scratch detection, all analyses and figures
-  ebsd_datasets.py       dataset store and comparison figures
+  ebsd_datasets.py       dataset store, comparison table, figures V1/V2
+  ebsd_compare.py        comparison figures V3–V13, test data, Zener–Hollomon parameter
   ebsd_settings.py       settings, parameter list, figure list, version
   ebsd_i18n.py           language switch (German / English) and number formatting
   ebsd_marks.py          manual scratch marks
